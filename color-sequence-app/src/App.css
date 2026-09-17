@@ -1,0 +1,250 @@
+* {
+  box-sizing: border-box;
+  cursor: none; /* hide default cursor everywhere */
+}
+
+html {
+  height: 100%;
+  overflow: hidden; /* kills scrollbar tracks on all edges */
+}
+
+body {
+  margin: 0;
+  height: 100%;
+  font-family: Arial, sans-serif;
+  background-color: white;
+  overflow: hidden;
+}
+
+.app {
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* ── Custom cursor ──
+   Both elements start invisible (opacity:0) and are revealed on first
+   mousemove so they never animate in from 0,0 on page load.
+   Position is driven by transform:translate() — GPU composited,
+   zero layout recalculation per frame.
+── */
+.cursor-dot {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 8px;
+  height: 8px;
+  background: white;           /* white dot, visible on any background */
+  border-radius: 50%;
+  pointer-events: none;
+  z-index: 9999;
+  opacity: 0;                  /* hidden until first mousemove */
+  will-change: transform;
+  /* no position transition — dot tracks cursor exactly */
+  transition: opacity 0.2s;
+}
+
+.cursor-ring {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 34px;
+  height: 34px;
+  border-radius: 50%;
+  border: 2.5px solid;         /* color set inline */
+  pointer-events: none;
+  z-index: 9998;
+  opacity: 0;                  /* hidden until first mousemove */
+  will-change: transform;
+  /* transform transition gives the ring its lag feel */
+  transition:
+    transform     0.1s ease-out,
+    border-color  0.35s ease,
+    box-shadow    0.35s ease,
+    opacity       0.2s;
+}
+
+/* ── Click wave / ripple ── */
+.cursor-ripple {
+  position: fixed;
+  width: 34px;            /* same starting size as the cursor ring */
+  height: 34px;
+  border-radius: 50%;
+  border: 2px solid;      /* color set inline to match ring */
+  pointer-events: none;
+  z-index: 9997;
+  /* center on the exact click point */
+  transform: translate(-50%, -50%) scale(1);
+  animation: rippleWave 0.65s cubic-bezier(0, 0.55, 0.45, 1) forwards;
+}
+
+@keyframes rippleWave {
+  0% {
+    transform: translate(-50%, -50%) scale(1);
+    opacity: 0.85;
+  }
+  100% {
+    transform: translate(-50%, -50%) scale(5);
+    opacity: 0;
+  }
+}
+
+/* ── Sequence indicator ── */
+.color-sequence {
+  display: flex;
+  margin-bottom: 2vh;
+  gap: 4px;
+}
+
+.sequence-color {
+  width: 4vw;
+  height: 3.5vh;
+  min-width: 28px;
+  min-height: 20px;
+  border-radius: 3px;
+  transition: opacity 0.3s, transform 0.3s;
+}
+
+.sequence-color.done {
+  opacity: 0.2;
+  transform: scaleY(0.75);
+}
+
+/* ── Grid ── */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(3, 20vw);
+  gap: 1vw;
+}
+
+/* ── Card flip ── */
+.box-wrapper {
+  width: 20vw;
+  height: 12vh;
+  min-width: 80px;
+  min-height: 50px;
+  perspective: 800px;
+  transition: transform 0.1s;
+}
+
+.box-wrapper:active {
+  transform: scale(0.95);
+}
+
+.box-inner {
+  width: 100%;
+  height: 100%;
+  position: relative;
+  transform-style: preserve-3d;
+  transition: transform 0.45s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.box-inner.flipped {
+  transform: rotateY(180deg);
+}
+
+.box-face {
+  position: absolute;
+  width: 100%;
+  height: 100%;
+  backface-visibility: hidden;
+  border-radius: 6px;
+}
+
+.box-front {
+  background-color: #479985;
+}
+
+.box-back {
+  transform: rotateY(180deg);
+}
+
+/* Wrong-answer red flash */
+@keyframes wrongFlash {
+  0%   { box-shadow: inset 0 0 0 0px rgba(220, 38, 38, 0); }
+  25%  { box-shadow: inset 0 0 0 6px rgba(220, 38, 38, 0.95); }
+  75%  { box-shadow: inset 0 0 0 6px rgba(220, 38, 38, 0.95); }
+  100% { box-shadow: inset 0 0 0 0px rgba(220, 38, 38, 0); }
+}
+
+.box-inner.wrong .box-back {
+  animation: wrongFlash 0.7s ease forwards;
+}
+
+.box-front:hover {
+  opacity: 0.9;
+}
+
+/* ── Win overlay ── */
+@keyframes fadeIn {
+  from { opacity: 0; }
+  to   { opacity: 1; }
+}
+
+@keyframes popIn {
+  from { transform: scale(0.55); opacity: 0; }
+  to   { transform: scale(1);    opacity: 1; }
+}
+
+@keyframes bounce {
+  0%, 100% { transform: translateY(0); }
+  50%       { transform: translateY(-12px); }
+}
+
+.win-overlay {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.55);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 200;
+  animation: fadeIn 0.35s ease forwards;
+}
+
+.win-card {
+  background: white;
+  border-radius: 20px;
+  padding: 3rem 4.5rem;
+  text-align: center;
+  animation: popIn 0.45s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+}
+
+.win-emoji {
+  font-size: 3.5rem;
+  animation: bounce 1s ease-in-out infinite;
+}
+
+.win-title {
+  font-size: 2rem;
+  margin: 0.5rem 0 0.25rem;
+  color: #222;
+}
+
+.win-sub {
+  color: #777;
+  margin: 0 0 2rem;
+  font-size: 1rem;
+}
+
+.restart-btn {
+  background: #479985;
+  color: white;
+  border: none;
+  padding: 0.8rem 2.8rem;
+  border-radius: 50px;
+  font-size: 1.05rem;
+  font-family: Arial, sans-serif;
+  transition: background 0.2s, transform 0.15s;
+}
+
+.restart-btn:hover {
+  background: #3a8573;
+  transform: scale(1.06);
+}
+
+.restart-btn:active {
+  transform: scale(0.97);
+}
