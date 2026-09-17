@@ -9,6 +9,81 @@ Instructions:
 2. Create a React Project and create reusable components with props concept.
 3. Answer the questions below
 	- Where is data being passed from parent to child, and how do props make this possible?
+	Ans:
+		Data is passed from the App component (parent) to the Box component (child) through props.
+		The App component owns all the game state and passes the relevant pieces down to each tile:
+
+			assignedColor   - the hidden color on the back of the tile
+			isFlipped       - whether the tile is currently showing its color
+			isWrong         - whether this tile was a wrong guess (triggers the red flash)
+			transitionDelay - the timing offset used during the shuffle animation
+			onBoxClick      - the click handler function
+
+		Props make this possible by providing a one-way data channel. The parent renders
+		each <Box> with specific values and the child reads them as function parameters.
+		The child cannot modify the parent's state directly. It can only call the onBoxClick
+		callback that the parent passed to it. This keeps data flow predictable and each
+		component focused on its own responsibility.
+
 	- If we wanted to change the grid size from 3x3 to 4x4, which parts of your code need to change and why?
+	Ans:
+		Three parts need to change:
+
+		1. COLOR_SEQUENCE in App.jsx would need 16 colors instead of 9, because a 4x4
+		   grid has 16 tiles. Since tileColors is just a shuffled version of COLOR_SEQUENCE,
+		   it automatically becomes 16 entries too.
+
+		2. The grid columns in App.css:
+		   	This part would change:
+		   		grid-template-columns: repeat(3, 20vw);
+		   	It should become:
+		   		grid-template-columns: repeat(4, 15vw);
+		   	(4 columns, narrower so they still fit on screen)
+
+		3. The tile width in App.css:
+		   	This part would change:
+		   		.box-wrapper { width: 20vw; }
+		   	It should become:
+		   		.box-wrapper { width: 15vw; }
+		   	(tile width must match the column width)
+
+		The Box component itself needs no changes because it is reusable and only
+		cares about the props it receives, not how many tiles exist in the grid.
+
 	- Look at your grid. How does creating a single Box component save you from writing repetitive HTML code?
+	Ans:
+		Without a Box component, the full card-flip structure (4 nested divs: wrapper,
+		inner, front face, back face) would need to be written 9 times manually in App.jsx.
+
+		With the Box component, the structure is written once in Box.jsx and rendered
+		9 times using .map():
+
+			{tileColors.map((color, index) => (
+			  <Box key={index} assignedColor={color} isFlipped={...} onBoxClick={...} />
+			))}
+
+		If I want to change how all tiles look, for example adjusting the border-radius
+		or adding a shadow, I only edit Box.jsx once and it applies to every tile on the
+		grid automatically. This makes the code cleaner and much easier to maintain.
+
 	- If you remove the color prop from the Box component, what happens to the grid squares on your screen? Why?
+	Ans:
+		The back face of every tile becomes transparent. The color is applied through
+		this line inside Box.jsx:
+			style={{ backgroundColor: assignedColor }}
+
+		Without the assignedColor prop, assignedColor is undefined, so the browser
+		applies no background color to the back face.
+
+		Tiles that have not been flipped still look normal because the front face has
+		its teal color set directly in CSS:
+			.box-front { background-color: #479985; }
+
+		But when you click a tile and it flips over, the revealed side will be empty.
+		You will see a blank transparent face instead of a color. The flip animation
+		still plays, but there is nothing to reveal. This shows that the parent (App)
+		holds the color data and the child (Box) cannot display it unless it is
+		passed through props.
+
+
+
